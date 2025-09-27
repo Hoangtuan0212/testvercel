@@ -1,9 +1,8 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import axios from "axios";
 import { useSession } from "next-auth/react";
-import CartToast from "../components/CartToast";
 
-// Định nghĩa interfaces
+// Interfaces
 interface Product {
   id: number;
   title: string;
@@ -30,17 +29,17 @@ export interface Cart {
 
 interface CartContextProps {
   cart: Cart;
-  totalQuantity: number; // 👈 thêm trực tiếp vào context
+  totalQuantity: number;
   fetchCart: () => Promise<void>;
   addToCart: (productId: number, quantity: number) => Promise<void>;
   removeCartItem: (cartItemId: number) => Promise<void>;
   updateCartItem: (cartItemId: number, quantity: number) => Promise<void>;
 }
 
-// Tạo context mặc định
+// Context
 const CartContext = createContext<CartContextProps>({
   cart: { CartItems: [], totalQuantity: 0 },
-  totalQuantity: 0, // 👈 thêm vào default value
+  totalQuantity: 0,
   fetchCart: async () => {},
   addToCart: async () => {},
   removeCartItem: async () => {},
@@ -49,12 +48,9 @@ const CartContext = createContext<CartContextProps>({
 
 export const useCart = () => useContext(CartContext);
 
-export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { data: session, status } = useSession();
   const [cart, setCart] = useState<Cart>({ CartItems: [], totalQuantity: 0 });
-  const [showToast, setShowToast] = useState(false);
 
   axios.defaults.withCredentials = true;
 
@@ -75,19 +71,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const addToCart = async (productId: number, quantity: number) => {
-    if (status !== "authenticated" || !session) {
-      console.error("addToCart => Chưa đăng nhập, không gọi API");
-      return;
-    }
+    if (status !== "authenticated" || !session) return;
     try {
-      await axios.post(
-        "/api/cart",
-        { productId, quantity },
-        { withCredentials: true }
-      );
+      await axios.post("/api/cart", { productId, quantity }, { withCredentials: true });
       await fetchCart();
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 5000);
     } catch (error) {
       console.error("Lỗi addToCart:", error);
     }
@@ -104,14 +91,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const updateCartItem = async (cartItemId: number, quantity: number) => {
     try {
-      await axios.patch(
-        `/api/cart/${cartItemId}`,
-        { quantity },
-        {
-          headers: { "Content-Type": "application/json" },
-          withCredentials: true,
-        }
-      );
+      await axios.patch(`/api/cart/${cartItemId}`, { quantity }, { withCredentials: true });
       await fetchCart();
     } catch (error) {
       console.error("Lỗi updateCartItem:", error);
@@ -126,7 +106,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     <CartContext.Provider
       value={{
         cart,
-        totalQuantity: cart.totalQuantity, // 👈 expose trực tiếp ra context
+        totalQuantity: cart.totalQuantity,
         fetchCart,
         addToCart,
         removeCartItem,
@@ -134,12 +114,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       }}
     >
       {children}
-      {showToast && (
-        <CartToast
-          message="Đã thêm vào giỏ hàng!"
-          onClose={() => setShowToast(false)}
-        />
-      )}
     </CartContext.Provider>
   );
 };
