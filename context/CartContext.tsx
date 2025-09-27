@@ -1,39 +1,167 @@
-import React from "react";
-import Link from "next/link";
-import { useCart } from "../context/CartContext"; // đường dẫn đúng tới CartContext
+import React, { createContext, useContext, useState, useEffect } from "react";
+import axios from "axios";
+import { useSession } from "next-auth/react";
+import CartToast from "../components/CartToast";
 
-const CartIcon: React.FC = () => {
-  const { cart } = useCart();
-  const { totalQuantity } = cart; // lấy totalQuantity từ cart
+// Định nghĩa interfaces
+interface Product {
+  id: number;
+  title: string;
+  price: number;
+  discount?: number;
+  thumbnail?: string;
+  colors?: string[];
+  sizes?: string[];
+  code?: string;
+  status?: string;
+}
+
+export interface CartItem {
+  id: number;
+  productId: number;
+  quantity: number;
+  product: Product;
+}
+
+export interface Cart {
+  CartItems: CartItem[];
+  totalQuantity: number;
+}
+
+interface CartContextProps {
+  cart: Cart;
+  fetchCart: () => Promise<void>;
+  addToCart: (productId: number, quantity: number) => Promise<void>;
+  removeCartItem: (cartItemId: number) => Promise<void>;
+  updateCartItem: (cartItemId: number, quantity: number) => Promise<void>;
+}
+
+// Tạo context mặc định
+const CartContext = createContext<CartContextProps>({
+  cart: { CartItems: [], totalQuantity: 0 },
+  fetchCart: async () => {},
+  addToCart: async () => {},
+  removeCartItem: async () => {},
+  updateCartItem: async () => {},
+});
+
+export const useCart = () => useContext(CartContext);
+
+export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const { data: session, status } = useSession();
+  const [cart, setCart] = useState<Cart>({ CartItems: [], totalQuantity: 0 });
+  const [showToast, setShowToast] = useState(false);
+
+  // Đảm bảo axios gửi cookie kèm theo request
+  axios.defaults.withCredentials = true;
+
+  // Debug log
+  console.log("CartContext => session:", session);
+  console.log("CartContext => status:", status);
+
+  const fetchCart = async () => {
+    if (status !== "authenticated" || !session) {
+      setCart({ CartItems: [], totalQuantity: 0 });
+      return;
+    }
+    try {
+      console.log("fetchCart => Gọi GET /api/cart");
+      const res = await axios.get("/api/cart", { withCredentials: true });
+      console.log("fetchCart => Kết quả:", res.data);
+      setCart({
+        CartItems: res.data.cartItems || [],
+        totalQuantity: res.data.totalQuantity || 0,
+      });
+    } catch (error) {
+      console.error("Lỗi fetchCart:", error);
+    }
+  };
+
+  const addToCart = async (productId: number, quantity: number) => {
+    if (status !== "authenticated" || !session) {
+      console.error("addToCart => Chưa đăng nhập, không gọi API");
+      return;
+    }
+    try {
+      console.log(
+        "addToCart => Gọi POST /api/cart với productId:",
+        productId,
+        "và quantity:",
+        quantity
+      );
+      await axios.post(
+        "/api/cart",
+        { productId, quantity },
+        { withCredentials: true }
+      );
+      console.log("addToCart => POST thành công, gọi fetchCart");
+      await fetchCart();
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 5000);
+    } catch (error) {
+      console.error("Lỗi addToCart:", error);
+    }
+  };
+
+  const removeCartItem = async (cartItemId: number) => {
+    try {
+      console.log("removeCartItem => Gọi DELETE /api/cart/", cartItemId);
+      await axios.delete(`/api/cart/${cartItemId}`, { withCredentials: true });
+      console.log("removeCartItem => DELETE thành công, gọi fetchCart");
+      await fetchCart();
+    } catch (error) {
+      console.error("Lỗi removeCartItem:", error);
+    }
+  };
+
+  const updateCartItem = async (cartItemId: number, quantity: number) => {
+    try {
+      console.log(
+        "updateCartItem => Gọi PATCH /api/cart/",
+        cartItemId,
+        "với quantity:",
+        quantity
+      );
+      await axios.patch(
+        `/api/cart/${cartItemId}`,
+        { quantity },
+        {
+          headers: { "Content-Type": "application/json" },
+          withCredentials: true,
+        }
+      );
+      console.log("updateCartItem => PATCH thành công, gọi fetchCart");
+      await fetchCart();
+    } catch (error) {
+      console.error("Lỗi updateCartItem:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchCart();
+  }, [session, status]);
 
   return (
-    <Link href="/cart">
-      <a className="relative inline-block">
-        {/* Icon giỏ hàng */}
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-6 w-6"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2 9m5-9v9m4-9v9m4-9l2 9"
-          />
-        </svg>
-
-        {/* Badge số lượng */}
-        {totalQuantity > 0 && (
-          <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
-            {totalQuantity}
-          </span>
-        )}
-      </a>
-    </Link>
+    <CartContext.Provider
+      value={{
+        cart,
+        fetchCart,
+        addToCart,
+        removeCartItem,
+        updateCartItem,
+      }}
+    >
+      {children}
+      {showToast && (
+        <CartToast
+          message="Đã thêm vào giỏ hàng!"
+          onClose={() => setShowToast(false)}
+        />
+      )}
+    </CartContext.Provider>
   );
 };
 
-export default CartIcon;
+export default CartProvider;
