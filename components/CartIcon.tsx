@@ -1,15 +1,15 @@
 // components/CartIcon.tsx
 import { useState, useEffect, useRef } from "react";
 import CartPopup from "./CartPopup";
-import { useCart } from "../context/CartContext";
+import { useCart, CartContextProps } from "../context/CartContext"; // import đúng type nếu có
 
 const CartIcon: React.FC = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const cartPopupRef = useRef<HTMLDivElement>(null);
 
   // Lấy cart từ context
-  const { cart } = useCart();
-  const { totalQuantity } = cart;
+  const { cart } = useCart() as CartContextProps;
+  const totalQuantity = cart?.totalQuantity ?? 0;
 
   // Đóng popup khi click ngoài
   useEffect(() => {
