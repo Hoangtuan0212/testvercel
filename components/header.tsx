@@ -1,82 +1,65 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
-import AuthPopup from "../components/auth/AuthPopup";
 import UserMenu from "../components/UserMenu";
 import SearchBar from "../components/SearchBar";
 import CartIcon from "../components/CartIcon";
-import CartPopup from "../components/CartPopup"; // Import popup giỏ hàng
+import CartPopup from "../components/CartPopup";
+import AuthPopup from "../components/auth/AuthPopup";
 import styles from "../styles/Home.module.css";
 
-// Bổ sung đầy đủ key "Vietnam" và "English"
+// Bản dịch
 const translations = {
-  Vietnam: {
-    home: "Trang Chủ",
-    about: "Giới Thiệu",
-    products: "Sản Phẩm",
-  },
-  English: {
-    home: "Home",
-    about: "About",
-    products: "Products",
-  },
+  Vietnam: { home: "Trang Chủ", about: "Giới Thiệu", products: "Sản Phẩm" },
+  English: { home: "Home", about: "About", products: "Products" },
 };
 
-export default function Header() {
+const Header: React.FC = () => {
   const { data: session } = useSession();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [language, setLanguage] = useState("Vietnam");
-  const authPopupRef = useRef(null);
-  const cartPopupRef = useRef(null); // Thêm ref cho giỏ hàng
-
-  // State kiểm soát việc header có thu nhỏ không
+  const [language, setLanguage] = useState<"Vietnam" | "English">("Vietnam");
   const [shrink, setShrink] = useState(false);
-
-  // State mở popup giỏ hàng
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  // Lắng nghe sự kiện scroll
+  const authPopupRef = useRef<HTMLDivElement>(null);
+  const cartPopupRef = useRef<HTMLDivElement>(null);
+
+  // Scroll shrink header
   useEffect(() => {
-    function handleScroll() {
-      setShrink(window.scrollY > 50);
-    }
+    const handleScroll = () => setShrink(window.scrollY > 50);
     window.addEventListener("scroll", handleScroll);
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Đóng popup auth khi click ngoài
+  // Click ngoài Auth Popup
   useEffect(() => {
-    const handleClickOutside = (event) => {
+    const handleClickOutside = (event: MouseEvent) => {
       if (
         authPopupRef.current &&
-        !authPopupRef.current.contains(event.target)
+        !authPopupRef.current.contains(event.target as Node)
       ) {
         setIsAuthOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
+    return () =>
       document.removeEventListener("mousedown", handleClickOutside);
-    };
   }, []);
 
-  // Đóng popup giỏ hàng khi click ngoài
+  // Click ngoài Cart Popup
   useEffect(() => {
-    const handleClickOutside = (event) => {
+    const handleClickOutside = (event: MouseEvent) => {
       if (
         cartPopupRef.current &&
-        !cartPopupRef.current.contains(event.target)
+        !cartPopupRef.current.contains(event.target as Node)
       ) {
         setIsCartOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
+    return () =>
       document.removeEventListener("mousedown", handleClickOutside);
-    };
   }, []);
 
   return (
@@ -94,7 +77,7 @@ export default function Header() {
           </Link>
         </div>
 
-        {/* topBar */}
+        {/* Top Bar */}
         <div className={styles.topBar}>
           <UserMenu
             language={language}
@@ -109,9 +92,12 @@ export default function Header() {
             <CartIcon onClick={() => setIsCartOpen(true)} />
           </div>
 
+          {/* Language select */}
           <select
             value={language}
-            onChange={(e) => setLanguage(e.target.value)}
+            onChange={(e) =>
+              setLanguage(e.target.value as "Vietnam" | "English")
+            }
             className={styles.languageSelect}
           >
             <option value="Vietnam">Vietnam</option>
@@ -156,9 +142,11 @@ export default function Header() {
       {/* Cart Popup */}
       {isCartOpen && (
         <div ref={cartPopupRef}>
-          <CartPopup isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+          <CartPopup onClose={() => setIsCartOpen(false)} />
         </div>
       )}
     </header>
   );
-}
+};
+
+export default Header;
