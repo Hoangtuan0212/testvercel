@@ -1,122 +1,55 @@
-// context/CartContext.tsx
-import React, { createContext, useContext, useState, useEffect } from "react";
-import axios from "axios";
-import { useSession } from "next-auth/react";
-import CartToast from "../components/CartToast";
+// components/CartIcon.tsx
+import { useState, useEffect, useRef } from "react";
+import CartPopup from "./CartPopup";
+import { useCart } from "../context/CartContext";
 
-// Interfaces
-interface Product {
-  id: number;
-  title: string;
-  price: number;
-  discount?: number;
-  thumbnail?: string;
-  colors?: string[];
-  sizes?: string[];
-  code?: string;
-  status?: string;
-}
+const CartIcon: React.FC = () => {
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const cartPopupRef = useRef<HTMLDivElement>(null);
 
-export interface CartItem {
-  id: number;
-  productId: number;
-  quantity: number;
-  product: Product;
-}
+  // Lấy cart từ context
+  const { cart } = useCart();
+  const { totalQuantity } = cart;
 
-export interface Cart {
-  CartItems: CartItem[];
-  totalQuantity: number;
-}
-
-interface CartContextProps {
-  cart: Cart;
-  fetchCart: () => Promise<void>;
-  addToCart: (productId: number, quantity: number) => Promise<void>;
-  removeCartItem: (cartItemId: number) => Promise<void>;
-  updateCartItem: (cartItemId: number, quantity: number) => Promise<void>;
-}
-
-// Tạo context
-const CartContext = createContext<CartContextProps>({
-  cart: { CartItems: [], totalQuantity: 0 },
-  fetchCart: async () => {},
-  addToCart: async () => {},
-  removeCartItem: async () => {},
-  updateCartItem: async () => {},
-});
-
-// Named export useCart
-export const useCart = () => useContext(CartContext);
-
-// CartProvider
-export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { data: session, status } = useSession();
-  const [cart, setCart] = useState<Cart>({ CartItems: [], totalQuantity: 0 });
-  const [showToast, setShowToast] = useState(false);
-
-  axios.defaults.withCredentials = true;
-
-  const fetchCart = async () => {
-    if (status !== "authenticated" || !session) {
-      setCart({ CartItems: [], totalQuantity: 0 });
-      return;
-    }
-    try {
-      const res = await axios.get("/api/cart", { withCredentials: true });
-      setCart({
-        CartItems: res.data.cartItems || [],
-        totalQuantity: res.data.totalQuantity || 0,
-      });
-    } catch (error) {
-      console.error("Lỗi fetchCart:", error);
-    }
-  };
-
-  const addToCart = async (productId: number, quantity: number) => {
-    if (status !== "authenticated" || !session) return;
-    try {
-      await axios.post("/api/cart", { productId, quantity }, { withCredentials: true });
-      await fetchCart();
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 5000);
-    } catch (error) {
-      console.error("Lỗi addToCart:", error);
-    }
-  };
-
-  const removeCartItem = async (cartItemId: number) => {
-    try {
-      await axios.delete(`/api/cart/${cartItemId}`, { withCredentials: true });
-      await fetchCart();
-    } catch (error) {
-      console.error("Lỗi removeCartItem:", error);
-    }
-  };
-
-  const updateCartItem = async (cartItemId: number, quantity: number) => {
-    try {
-      await axios.patch(
-        `/api/cart/${cartItemId}`,
-        { quantity },
-        { headers: { "Content-Type": "application/json" }, withCredentials: true }
-      );
-      await fetchCart();
-    } catch (error) {
-      console.error("Lỗi updateCartItem:", error);
-    }
-  };
-
+  // Đóng popup khi click ngoài
   useEffect(() => {
-    fetchCart();
-  }, [session, status]);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (cartPopupRef.current && !cartPopupRef.current.contains(event.target as Node)) {
+        setIsCartOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
-    <CartContext.Provider value={{ cart, fetchCart, addToCart, removeCartItem, updateCartItem }}>
-      {children}
-      {showToast && <CartToast message="Đã thêm vào giỏ hàng!" onClose={() => setShowToast(false)} />}
-    </CartContext.Provider>
+    <div className="relative">
+      <button
+        onClick={() => setIsCartOpen((prev) => !prev)}
+        className="relative focus:outline-none"
+      >
+        <img
+          src="/images/icon/carticon.png"
+          alt="Giỏ hàng"
+          width={25}
+          height={25}
+          className="w-8 h-8 object-contain bg-transparent border-none"
+        />
+        {totalQuantity > 0 && (
+          <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full px-1">
+            {totalQuantity}
+          </span>
+        )}
+      </button>
+
+      {isCartOpen && (
+        <div ref={cartPopupRef} className="absolute z-50">
+          <CartPopup onClose={() => setIsCartOpen(false)} />
+        </div>
+      )}
+    </div>
   );
 };
 
-export default CartProvider;
+export default CartIcon;
