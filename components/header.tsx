@@ -90,7 +90,7 @@ export default function Header() {
 
           {/* Cart Icon */}
           <div className="relative">
-            <CartIcon onClick={() => setIsCartOpen(true)} />
+            <CartIcon />
           </div>
 
           <select
