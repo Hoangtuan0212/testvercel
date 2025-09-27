@@ -10,7 +10,6 @@ export default function CartPopup({ onClose }: CartPopupProps) {
   const { cart, removeCartItem, updateCartItem } = useCart();
   const router = useRouter();
 
-  // Tính tổng tiền
   const totalPrice = cart.CartItems.reduce((acc, item) => {
     if (!item.product) return acc;
     const { price, discount } = item.product;
@@ -21,7 +20,6 @@ export default function CartPopup({ onClose }: CartPopupProps) {
   return (
     <div className="fixed inset-0 bg-black/30 flex justify-end z-50">
       <div className="w-80 bg-white h-full p-4 flex flex-col relative">
-        {/* Nút đóng */}
         <button className="absolute top-2 right-2 text-xl" onClick={onClose}>
           &times;
         </button>
