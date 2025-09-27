@@ -1,8 +1,6 @@
 // components/CartIcon.tsx
 import { useState, useEffect, useRef } from "react";
 import CartPopup from "./CartPopup";
-import { useCart } from "../context/CartContext";
-
 const CartIcon: React.FC = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const cartPopupRef = useRef<HTMLDivElement>(null);
@@ -53,3 +51,4 @@ const CartIcon: React.FC = () => {
 };
 
 export default CartIcon;
+
