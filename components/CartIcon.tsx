@@ -7,8 +7,9 @@ const CartIcon = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const cartPopupRef = useRef<HTMLDivElement>(null);
 
-  // Lấy tổng số lượng từ context
-  const { totalQuantity } = useCart();
+  // Lấy tổng số lượng từ cart trong context
+  const { cart } = useCart();        // <-- sửa ở đây
+  const { totalQuantity } = cart;    // <-- lấy từ cart
 
   // Đóng popup khi click ngoài
   useEffect(() => {
