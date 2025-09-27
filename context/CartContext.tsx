@@ -30,6 +30,7 @@ export interface Cart {
 
 interface CartContextProps {
   cart: Cart;
+  totalQuantity: number; // 👈 thêm trực tiếp vào context
   fetchCart: () => Promise<void>;
   addToCart: (productId: number, quantity: number) => Promise<void>;
   removeCartItem: (cartItemId: number) => Promise<void>;
@@ -39,6 +40,7 @@ interface CartContextProps {
 // Tạo context mặc định
 const CartContext = createContext<CartContextProps>({
   cart: { CartItems: [], totalQuantity: 0 },
+  totalQuantity: 0, // 👈 thêm vào default value
   fetchCart: async () => {},
   addToCart: async () => {},
   removeCartItem: async () => {},
@@ -54,12 +56,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   const [cart, setCart] = useState<Cart>({ CartItems: [], totalQuantity: 0 });
   const [showToast, setShowToast] = useState(false);
 
-  // Đảm bảo axios gửi cookie kèm theo request
   axios.defaults.withCredentials = true;
-
-  // Debug log
-  console.log("CartContext => session:", session);
-  console.log("CartContext => status:", status);
 
   const fetchCart = async () => {
     if (status !== "authenticated" || !session) {
@@ -67,9 +64,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
     try {
-      console.log("fetchCart => Gọi GET /api/cart");
       const res = await axios.get("/api/cart", { withCredentials: true });
-      console.log("fetchCart => Kết quả:", res.data);
       setCart({
         CartItems: res.data.cartItems || [],
         totalQuantity: res.data.totalQuantity || 0,
@@ -85,18 +80,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
     try {
-      console.log(
-        "addToCart => Gọi POST /api/cart với productId:",
-        productId,
-        "và quantity:",
-        quantity
-      );
       await axios.post(
         "/api/cart",
         { productId, quantity },
         { withCredentials: true }
       );
-      console.log("addToCart => POST thành công, gọi fetchCart");
       await fetchCart();
       setShowToast(true);
       setTimeout(() => setShowToast(false), 5000);
@@ -107,9 +95,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const removeCartItem = async (cartItemId: number) => {
     try {
-      console.log("removeCartItem => Gọi DELETE /api/cart/", cartItemId);
       await axios.delete(`/api/cart/${cartItemId}`, { withCredentials: true });
-      console.log("removeCartItem => DELETE thành công, gọi fetchCart");
       await fetchCart();
     } catch (error) {
       console.error("Lỗi removeCartItem:", error);
@@ -118,12 +104,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const updateCartItem = async (cartItemId: number, quantity: number) => {
     try {
-      console.log(
-        "updateCartItem => Gọi PATCH /api/cart/",
-        cartItemId,
-        "với quantity:",
-        quantity
-      );
       await axios.patch(
         `/api/cart/${cartItemId}`,
         { quantity },
@@ -132,7 +112,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
           withCredentials: true,
         }
       );
-      console.log("updateCartItem => PATCH thành công, gọi fetchCart");
       await fetchCart();
     } catch (error) {
       console.error("Lỗi updateCartItem:", error);
@@ -147,6 +126,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     <CartContext.Provider
       value={{
         cart,
+        totalQuantity: cart.totalQuantity, // 👈 expose trực tiếp ra context
         fetchCart,
         addToCart,
         removeCartItem,
