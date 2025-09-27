@@ -1,4 +1,3 @@
-// components/Header.tsx
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -7,10 +6,10 @@ import AuthPopup from "../components/auth/AuthPopup";
 import UserMenu from "../components/UserMenu";
 import SearchBar from "../components/SearchBar";
 import CartIcon from "../components/CartIcon";
-import CartPopup from "../components/CartPopup";
+import CartPopup from "../components/CartPopup"; // Import popup giỏ hàng
 import styles from "../styles/Home.module.css";
 
-// Dịch ngôn ngữ
+// Bổ sung đầy đủ key "Vietnam" và "English"
 const translations = {
   Vietnam: {
     home: "Trang Chủ",
@@ -27,40 +26,57 @@ const translations = {
 export default function Header() {
   const { data: session } = useSession();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [language, setLanguage] = useState<"Vietnam" | "English">("Vietnam");
-  const authPopupRef = useRef<HTMLDivElement>(null);
-  const cartPopupRef = useRef<HTMLDivElement>(null);
+  const [language, setLanguage] = useState("Vietnam");
+  const authPopupRef = useRef(null);
+  const cartPopupRef = useRef(null); // Thêm ref cho giỏ hàng
 
+  // State kiểm soát việc header có thu nhỏ không
   const [shrink, setShrink] = useState(false);
+
+  // State mở popup giỏ hàng
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  // Scroll shrink header
+  // Lắng nghe sự kiện scroll
   useEffect(() => {
-    const handleScroll = () => setShrink(window.scrollY > 50);
+    function handleScroll() {
+      setShrink(window.scrollY > 50);
+    }
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
   }, []);
 
   // Đóng popup auth khi click ngoài
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (authPopupRef.current && !authPopupRef.current.contains(event.target as Node)) {
+    const handleClickOutside = (event) => {
+      if (
+        authPopupRef.current &&
+        !authPopupRef.current.contains(event.target)
+      ) {
         setIsAuthOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
   // Đóng popup giỏ hàng khi click ngoài
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (cartPopupRef.current && !cartPopupRef.current.contains(event.target as Node)) {
+    const handleClickOutside = (event) => {
+      if (
+        cartPopupRef.current &&
+        !cartPopupRef.current.contains(event.target)
+      ) {
         setIsCartOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
   return (
@@ -78,7 +94,7 @@ export default function Header() {
           </Link>
         </div>
 
-        {/* Top bar */}
+        {/* topBar */}
         <div className={styles.topBar}>
           <UserMenu
             language={language}
@@ -90,12 +106,12 @@ export default function Header() {
 
           {/* Cart Icon */}
           <div className="relative">
-            <CartIcon />
+            <CartIcon onClick={() => setIsCartOpen(true)} />
           </div>
 
           <select
             value={language}
-            onChange={(e) => setLanguage(e.target.value as "Vietnam" | "English")}
+            onChange={(e) => setLanguage(e.target.value)}
             className={styles.languageSelect}
           >
             <option value="Vietnam">Vietnam</option>
@@ -109,17 +125,17 @@ export default function Header() {
         <ul className={styles.navList}>
           <li className={styles.navItem}>
             <Link href="/" className={styles.navLink}>
-              {translations[language].home}
+              {translations[language]?.home ?? "Home"}
             </Link>
           </li>
           <li className={styles.navItem}>
             <Link href="/about" className={styles.navLink}>
-              {translations[language].about}
+              {translations[language]?.about ?? "About"}
             </Link>
           </li>
           <li className={styles.navItem}>
             <Link href="/products" className={styles.navLink}>
-              {translations[language].products}
+              {translations[language]?.products ?? "Products"}
             </Link>
           </li>
         </ul>
