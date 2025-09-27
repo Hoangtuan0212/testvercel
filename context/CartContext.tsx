@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import axios from "axios";
 import { useSession } from "next-auth/react";
 
-// Interfaces
+// Product interface
 interface Product {
   id: number;
   title: string;
@@ -15,6 +15,7 @@ interface Product {
   status?: string;
 }
 
+// CartItem interface
 export interface CartItem {
   id: number;
   productId: number;
@@ -22,14 +23,16 @@ export interface CartItem {
   product: Product;
 }
 
+// Cart interface
 export interface Cart {
   CartItems: CartItem[];
   totalQuantity: number;
 }
 
+// CartContextProps interface
 interface CartContextProps {
   cart: Cart;
-  totalQuantity: number;
+  totalQuantity: number; // ✅ expose trực tiếp
   fetchCart: () => Promise<void>;
   addToCart: (productId: number, quantity: number) => Promise<void>;
   removeCartItem: (cartItemId: number) => Promise<void>;
@@ -48,6 +51,7 @@ const CartContext = createContext<CartContextProps>({
 
 export const useCart = () => useContext(CartContext);
 
+// Provider
 export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { data: session, status } = useSession();
   const [cart, setCart] = useState<Cart>({ CartItems: [], totalQuantity: 0 });
@@ -66,7 +70,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         totalQuantity: res.data.totalQuantity || 0,
       });
     } catch (error) {
-      console.error("Lỗi fetchCart:", error);
+      console.error("fetchCart error:", error);
     }
   };
 
@@ -76,7 +80,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       await axios.post("/api/cart", { productId, quantity }, { withCredentials: true });
       await fetchCart();
     } catch (error) {
-      console.error("Lỗi addToCart:", error);
+      console.error("addToCart error:", error);
     }
   };
 
@@ -85,7 +89,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       await axios.delete(`/api/cart/${cartItemId}`, { withCredentials: true });
       await fetchCart();
     } catch (error) {
-      console.error("Lỗi removeCartItem:", error);
+      console.error("removeCartItem error:", error);
     }
   };
 
@@ -94,7 +98,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       await axios.patch(`/api/cart/${cartItemId}`, { quantity }, { withCredentials: true });
       await fetchCart();
     } catch (error) {
-      console.error("Lỗi updateCartItem:", error);
+      console.error("updateCartItem error:", error);
     }
   };
 
