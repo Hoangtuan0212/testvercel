@@ -6,7 +6,7 @@ import { LanguageProvider } from "../context/LanguageContext"; // Giả sử b�
 import { CartProvider } from "../context/CartContext";
 import "../styles/globals.css";
 
-import Header from "../components/Header";
+import Header from "../components/header";
 import Footer from "../components/Footer";
 
 type MyAppProps = AppProps & {
@@ -30,3 +30,4 @@ function MyApp({ Component, pageProps }: MyAppProps) {
 }
 
 export default MyApp;
+
