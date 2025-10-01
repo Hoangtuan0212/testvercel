@@ -1,4 +1,3 @@
-// pages/api/auth/[...nextauth].ts
 import NextAuth, { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaClient } from "@prisma/client";
@@ -47,7 +46,7 @@ export const authOptions: AuthOptions = {
           throw new Error("Email hoặc mật khẩu không đúng!");
         }
 
-        // ⚡ Chuyển id sang string để TypeScript NextAuth không báo lỗi
+        // ⚡ Chuyển id sang string
         return {
           id: String(user.id),
           name: `${user.firstName} ${user.lastName}`,
